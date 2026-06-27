@@ -1,0 +1,20 @@
+<view class="container">
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty text-muted">还没有打卡记录,去打卡吧~</view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card record" data-id="{{item.id}}" bindtap="goDetail">
+    <view class="row between">
+      <view class="row">
+        <text class="sport">{{item.sportName}}</text>
+        <text class="text-muted dur">{{item.duration}} 分钟 · {{item.calorie}} 千卡</text>
+      </view>
+      <text class="text-muted">{{item.checkinDate}}</text>
+    </view>
+    <view wx:if="{{item.remark}}" class="remark">{{item.remark}}</view>
+    <view wx:if="{{item.images.length}}" class="thumbs">
+      <image wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" class="thumb" src="{{img}}" mode="aspectFill" />
+    </view>
+    <view class="row like-row text-muted">❤️ {{item.likeCount}}</view>
+  </view>
+
+  <view wx:if="{{noMore && list.length}}" class="text-muted end">— 没有更多了 —</view>
+</view>

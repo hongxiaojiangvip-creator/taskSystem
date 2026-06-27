@@ -1,0 +1,14 @@
+<view class="container">
+  <view class="card">
+    <view class="form-item">
+      <text class="form-label">每周打卡目标(天)</text>
+      <input class="form-input" type="number" value="{{weeklyDays}}" bindinput="onDays" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">每周运动目标(分钟)</text>
+      <input class="form-input" type="number" value="{{weeklyMinutes}}" bindinput="onMinutes" />
+    </view>
+  </view>
+  <view class="tip text-muted">建议:每周运动 3-5 天,累计 150 分钟以上有益健康。</view>
+  <button class="btn-primary" bindtap="save">保存目标</button>
+</view>

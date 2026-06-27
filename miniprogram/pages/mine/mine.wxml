@@ -1,0 +1,45 @@
+<view class="container">
+  <!-- 未登录 -->
+  <view wx:if="{{!userInfo}}" class="card login-card">
+    <view class="text-muted">登录后查看你的健身数据</view>
+    <button class="btn-primary login-btn" bindtap="onLogin">微信登录</button>
+  </view>
+
+  <block wx:else>
+    <view class="card profile">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image class="big-avatar" src="{{userInfo.avatar}}" />
+      </button>
+      <view class="profile-info">
+        <view class="nick" bindtap="editNickname">{{userInfo.nickname}} ✎</view>
+        <view class="text-muted">已坚持 {{overview.totalDays || 0}} 天</view>
+      </view>
+    </view>
+
+    <view class="card stat-row">
+      <view class="stat">
+        <view class="stat-num">{{overview.currentStreak || 0}}</view>
+        <view class="text-muted">连续天数</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{overview.maxStreak || 0}}</view>
+        <view class="text-muted">最长连续</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{overview.totalDays || 0}}</view>
+        <view class="text-muted">累计天数</view>
+      </view>
+    </view>
+
+    <view class="card menu">
+      <view class="menu-item" bindtap="goRecords">
+        <text>我的打卡记录</text><text class="text-muted">></text>
+      </view>
+      <view class="menu-item" bindtap="goGoal">
+        <text>健身目标设置</text><text class="text-muted">></text>
+      </view>
+    </view>
+
+    <button class="logout-btn" bindtap="logout">退出登录</button>
+  </block>
+</view>

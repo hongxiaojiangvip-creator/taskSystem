@@ -1,0 +1,8 @@
+.empty { text-align: center; padding: 120rpx 0; }
+.record .sport { font-size: 32rpx; font-weight: bold; margin-right: 16rpx; }
+.dur { font-size: 24rpx; }
+.remark { margin-top: 16rpx; font-size: 28rpx; color: #555; }
+.thumbs { margin-top: 16rpx; display: flex; flex-wrap: wrap; }
+.thumb { width: 180rpx; height: 180rpx; border-radius: 12rpx; margin: 8rpx; }
+.like-row { margin-top: 16rpx; font-size: 26rpx; }
+.end { text-align: center; padding: 30rpx 0; font-size: 24rpx; }

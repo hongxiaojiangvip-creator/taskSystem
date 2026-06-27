@@ -1,0 +1,23 @@
+# Java / Maven
+backend/target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# 上传文件
+backend/uploads/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# 微信开发者工具
+miniprogram/node_modules/
+**/.DS_Store
+
+# 日志
+*.log

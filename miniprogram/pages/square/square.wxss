@@ -1,0 +1,17 @@
+.empty { text-align: center; padding: 120rpx 0; }
+.meta { margin-left: 20rpx; }
+.nick { font-size: 30rpx; font-weight: bold; }
+.badge {
+  background: #e8f5e9;
+  color: #4caf50;
+  font-size: 24rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 24rpx;
+}
+.remark { margin-top: 16rpx; font-size: 28rpx; color: #555; }
+.thumbs { margin-top: 16rpx; display: flex; flex-wrap: wrap; }
+.thumb { width: 200rpx; height: 200rpx; border-radius: 12rpx; margin: 8rpx; }
+.foot { margin-top: 20rpx; }
+.like { font-size: 30rpx; }
+.like.liked { color: #e53935; }
+.end { text-align: center; padding: 30rpx 0; font-size: 24rpx; }

@@ -1,0 +1,21 @@
+<view class="container">
+  <view class="tabs">
+    <text class="tab {{period === 'week' ? 'active' : ''}}" data-period="week" bindtap="switchPeriod">本周</text>
+    <text class="tab {{period === 'month' ? 'active' : ''}}" data-period="month" bindtap="switchPeriod">本月</text>
+    <text class="tab {{period === 'all' ? 'active' : ''}}" data-period="all" bindtap="switchPeriod">总榜</text>
+  </view>
+
+  <view wx:if="{{list.length === 0}}" class="empty text-muted">暂无排行数据</view>
+
+  <view class="card">
+    <view wx:for="{{list}}" wx:key="userId" class="rank-row">
+      <view class="rank-no rank-{{index + 1}}">{{index + 1}}</view>
+      <image class="avatar" src="{{item.avatar}}" />
+      <view class="rank-info">
+        <view class="rank-nick">{{item.nickname}}</view>
+        <view class="text-muted">{{item.minutes}} 分钟</view>
+      </view>
+      <view class="rank-days">{{item.days}} 天</view>
+    </view>
+  </view>
+</view>

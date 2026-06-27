@@ -1,0 +1,55 @@
+<view class="container">
+  <!-- 概览 -->
+  <view class="card grid">
+    <view class="grid-item">
+      <view class="num">{{overview.currentStreak || 0}}</view>
+      <view class="text-muted">连续天数</view>
+    </view>
+    <view class="grid-item">
+      <view class="num">{{overview.totalDays || 0}}</view>
+      <view class="text-muted">累计天数</view>
+    </view>
+    <view class="grid-item">
+      <view class="num">{{overview.weekDays || 0}}</view>
+      <view class="text-muted">本周打卡</view>
+    </view>
+    <view class="grid-item">
+      <view class="num">{{overview.weekMinutes || 0}}</view>
+      <view class="text-muted">本周分钟</view>
+    </view>
+  </view>
+
+  <!-- 目标进度 -->
+  <view class="card" bindtap="goGoal">
+    <view class="row between">
+      <text class="sec-title">本周目标</text>
+      <text class="text-muted">设置 ></text>
+    </view>
+    <view class="goal-item">
+      <view class="row between">
+        <text>打卡天数 {{overview.weekDays || 0}}/{{overview.goalDays || 0}}</text>
+        <text class="text-muted">{{overview.daysProgress || 0}}%</text>
+      </view>
+      <view class="bar"><view class="bar-fill" style="width:{{overview.daysProgress || 0}}%"></view></view>
+    </view>
+    <view class="goal-item">
+      <view class="row between">
+        <text>运动时长 {{overview.weekMinutes || 0}}/{{overview.goalMinutes || 0}}分</text>
+        <text class="text-muted">{{overview.minutesProgress || 0}}%</text>
+      </view>
+      <view class="bar"><view class="bar-fill" style="width:{{overview.minutesProgress || 0}}%"></view></view>
+    </view>
+  </view>
+
+  <!-- 趋势图 -->
+  <view class="card">
+    <view class="row between">
+      <text class="sec-title">运动趋势(分钟)</text>
+      <view class="range">
+        <text class="range-btn {{days === 7 ? 'active' : ''}}" data-days="7" bindtap="switchRange">7天</text>
+        <text class="range-btn {{days === 30 ? 'active' : ''}}" data-days="30" bindtap="switchRange">30天</text>
+      </view>
+    </view>
+    <canvas type="2d" id="chart" class="chart"></canvas>
+  </view>
+</view>

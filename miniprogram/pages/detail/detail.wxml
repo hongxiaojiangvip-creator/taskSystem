@@ -1,0 +1,31 @@
+<view class="container" wx:if="{{item}}">
+  <view class="card">
+    <view class="row">
+      <image class="avatar" src="{{item.avatar}}" />
+      <view class="meta">
+        <view class="nick">{{item.nickname}}</view>
+        <view class="text-muted">{{item.checkinDate}}</view>
+      </view>
+    </view>
+
+    <view class="info">
+      <view class="sport-big">{{item.sportName}}</view>
+      <view class="text-muted">{{item.duration}} 分钟 · 约 {{item.calorie}} 千卡</view>
+    </view>
+
+    <view wx:if="{{item.remark}}" class="remark">{{item.remark}}</view>
+
+    <view wx:if="{{item.images.length}}" class="imgs">
+      <image wx:for="{{item.images}}" wx:key="*this" class="big-img" src="{{item}}"
+             mode="widthFix" data-url="{{item}}" bindtap="previewImage" />
+    </view>
+
+    <view class="row between actions">
+      <view class="like {{item.liked ? 'liked' : ''}}" bindtap="toggleLike">
+        {{item.liked ? '❤️' : '🤍'}} {{item.likeCount}}
+      </view>
+    </view>
+  </view>
+
+  <button class="del-btn" bindtap="onDelete">删除记录</button>
+</view>

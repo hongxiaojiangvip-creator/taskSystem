@@ -1,0 +1,36 @@
+<view class="container">
+  <view class="card">
+    <view class="label">运动类型</view>
+    <view class="types">
+      <view wx:for="{{sportTypes}}" wx:key="id"
+            class="type-item {{selectedTypeId === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}" bindtap="selectType">
+        <view class="type-icon">{{item.icon}}</view>
+        <view class="type-name">{{item.name}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="label">运动时长(分钟)</view>
+    <input class="input" type="number" placeholder="例如 30" value="{{duration}}" bindinput="onDuration" />
+  </view>
+
+  <view class="card">
+    <view class="label">备注</view>
+    <textarea class="textarea" placeholder="今天的运动感受..." value="{{remark}}" bindinput="onRemark" maxlength="500" />
+  </view>
+
+  <view class="card">
+    <view class="label">图片(选填)</view>
+    <view class="images">
+      <view wx:for="{{images}}" wx:key="*this" class="img-wrap">
+        <image class="img" src="{{item}}" mode="aspectFill" />
+        <view class="img-del" data-index="{{index}}" bindtap="removeImage">×</view>
+      </view>
+      <view wx:if="{{images.length < 6}}" class="img-add" bindtap="chooseImage">+</view>
+    </view>
+  </view>
+
+  <button class="btn-primary submit-btn" bindtap="submit" disabled="{{submitting}}">提交打卡</button>
+</view>

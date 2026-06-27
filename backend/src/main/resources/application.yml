@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: fitness-checkin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/fitness_checkin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# 业务配置
+app:
+  jwt:
+    # 生产环境请通过环境变量覆盖
+    secret: ${JWT_SECRET:fitness-checkin-default-secret-key-please-change-in-prod-0123456789}
+    # token 有效期(天)
+    expire-days: 7
+  wechat:
+    # 微信小程序 AppID / AppSecret,通过环境变量注入
+    app-id: ${WX_APPID:}
+    app-secret: ${WX_SECRET:}
+    # 开发联调用:为空时使用 mock 登录(用 code 直接当 openid),便于本地无 AppID 调试
+    mock-login: ${WX_MOCK_LOGIN:true}
+  upload:
+    # 图片上传本地存储目录
+    dir: ${UPLOAD_DIR:./uploads}
+    # 对外访问前缀
+    url-prefix: ${UPLOAD_URL_PREFIX:http://localhost:8080/uploads}
