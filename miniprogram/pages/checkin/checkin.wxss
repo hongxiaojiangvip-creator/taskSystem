@@ -64,3 +64,32 @@
   justify-content: center;
 }
 .submit-btn { margin-top: 20rpx; }
+
+.result-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.result-card {
+  width: 80%;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx;
+  text-align: center;
+}
+.result-emoji { font-size: 80rpx; }
+.result-title { font-size: 36rpx; font-weight: bold; margin: 16rpx 0 28rpx; }
+.ai-box {
+  background: #f1f8f2;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 32rpx;
+  text-align: left;
+}
+.ai-head { font-size: 26rpx; color: #4caf50; font-weight: bold; margin-bottom: 12rpx; }
+.ai-loading { font-size: 28rpx; color: #999; }
+.ai-text { font-size: 30rpx; color: #333; line-height: 1.6; }

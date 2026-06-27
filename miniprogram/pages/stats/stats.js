@@ -83,5 +83,9 @@ Page({
 
   goGoal() {
     wx.navigateTo({ url: '/pages/goal/goal' });
+  },
+
+  goAi() {
+    wx.navigateTo({ url: '/pages/ai/ai' });
   }
 });

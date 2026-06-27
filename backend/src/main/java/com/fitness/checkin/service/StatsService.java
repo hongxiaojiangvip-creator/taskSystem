@@ -50,7 +50,7 @@ public class StatsService {
         int goalMinutes = goal != null ? goal.getWeeklyMinutes() : 150;
 
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("currentStreak", user.getCurrentStreak());
+        map.put("currentStreak", CheckinService.effectiveStreak(user));
         map.put("maxStreak", user.getMaxStreak());
         map.put("totalDays", user.getTotalDays());
         map.put("weekDays", weekDays);

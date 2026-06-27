@@ -3,6 +3,7 @@ package com.fitness.checkin.controller;
 import com.fitness.checkin.common.Result;
 import com.fitness.checkin.entity.User;
 import com.fitness.checkin.mapper.UserMapper;
+import com.fitness.checkin.service.CheckinService;
 import com.fitness.checkin.util.UserContext;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,12 @@ public class UserController {
     /** 当前用户信息 */
     @GetMapping("/profile")
     public Result<User> profile() {
-        return Result.success(userMapper.selectById(UserContext.get()));
+        User user = userMapper.selectById(UserContext.get());
+        if (user != null) {
+            // 展示实时连续天数(断签则为 0),不回写数据库
+            user.setCurrentStreak(CheckinService.effectiveStreak(user));
+        }
+        return Result.success(user);
     }
 
     /** 更新昵称/头像 */

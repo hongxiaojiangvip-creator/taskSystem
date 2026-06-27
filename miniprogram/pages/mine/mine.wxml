@@ -32,6 +32,9 @@
     </view>
 
     <view class="card menu">
+      <view class="menu-item ai-entry" bindtap="goAi">
+        <text>🤖 AI 健身教练</text><text class="text-muted">周报 · 计划 · 问答 ></text>
+      </view>
       <view class="menu-item" bindtap="goRecords">
         <text>我的打卡记录</text><text class="text-muted">></text>
       </view>

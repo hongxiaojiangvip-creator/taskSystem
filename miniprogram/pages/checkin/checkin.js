@@ -8,7 +8,10 @@ Page({
     duration: '',
     remark: '',
     images: [],      // 已上传的 url
-    submitting: false
+    submitting: false,
+    aiComment: '',     // AI 教练点评
+    aiLoading: false,
+    showResult: false  // 打卡成功结果弹层
   },
 
   onLoad() {
@@ -69,11 +72,20 @@ Page({
       duration: Number(duration),
       remark,
       images
-    }).then(() => {
-      wx.showToast({ title: '打卡成功 🎉' });
-      setTimeout(() => wx.navigateBack(), 800);
+    }).then((vo) => {
+      // 打卡成功:弹出结果层并请求 AI 教练点评
+      this.setData({ showResult: true, aiLoading: true, aiComment: '' });
+      api.aiComment(vo.id).then((res) => {
+        this.setData({ aiComment: res.comment, aiLoading: false });
+      }).catch(() => {
+        this.setData({ aiLoading: false, aiComment: '坚持就是胜利,继续保持!💪' });
+      });
     }).catch(() => {
       this.setData({ submitting: false });
     });
+  },
+
+  finish() {
+    wx.navigateBack();
   }
 });

@@ -8,7 +8,8 @@
     "pages/rank/rank",
     "pages/square/square",
     "pages/mine/mine",
-    "pages/goal/goal"
+    "pages/goal/goal",
+    "pages/ai/ai"
   ],
   "window": {
     "backgroundTextStyle": "light",

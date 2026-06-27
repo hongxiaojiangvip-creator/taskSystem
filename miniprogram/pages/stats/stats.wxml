@@ -1,4 +1,13 @@
 <view class="container">
+  <!-- AI 教练入口 -->
+  <view class="card ai-banner" bindtap="goAi">
+    <view>
+      <view class="ai-banner-title">🤖 AI 健身教练</view>
+      <view class="text-muted">生成专属周报、训练计划,随时问答</view>
+    </view>
+    <text class="ai-banner-arrow">></text>
+  </view>
+
   <!-- 概览 -->
   <view class="card grid">
     <view class="grid-item">

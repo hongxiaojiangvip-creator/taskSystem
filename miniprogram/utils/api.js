@@ -31,5 +31,11 @@ module.exports = {
   saveGoal: (data) => request({ url: '/api/goal', method: 'POST', data }),
 
   // 排行榜
-  rank: (period) => request({ url: `/api/rank?period=${period}` })
+  rank: (period) => request({ url: `/api/rank?period=${period}` }),
+
+  // AI 能力
+  aiComment: (checkinId) => request({ url: '/api/ai/comment', method: 'POST', data: { checkinId } }),
+  aiWeeklyReport: () => request({ url: '/api/ai/weekly-report' }),
+  aiPlan: (goal) => request({ url: '/api/ai/plan', method: 'POST', data: { goal } }),
+  aiChat: (messages) => request({ url: '/api/ai/chat', method: 'POST', data: { messages } })
 };

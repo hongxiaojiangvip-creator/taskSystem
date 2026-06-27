@@ -7,6 +7,7 @@ import com.fitness.checkin.common.BusinessException;
 import com.fitness.checkin.dto.CheckinCreateDTO;
 import com.fitness.checkin.entity.Checkin;
 import com.fitness.checkin.entity.CheckinImage;
+import com.fitness.checkin.entity.LikeRecord;
 import com.fitness.checkin.entity.SportType;
 import com.fitness.checkin.entity.User;
 import com.fitness.checkin.mapper.CheckinImageMapper;
@@ -20,9 +21,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +42,7 @@ public class CheckinService {
     private final SportTypeMapper sportTypeMapper;
     private final UserMapper userMapper;
     private final LikeRecordMapper likeRecordMapper;
+    private final WechatSecurityService securityService;
 
     /** 各运动类型每分钟估算卡路里 */
     private static final Map<String, Integer> CALORIE_PER_MIN = Map.of(
@@ -49,13 +55,15 @@ public class CheckinService {
         if (type == null) {
             throw new BusinessException("运动类型不存在");
         }
-        LocalDate today = LocalDate.now();
+        // 内容安全审核(文字 + 图片),未配置微信凭证时自动跳过
+        securityService.checkText(dto.getRemark());
+        if (dto.getImages() != null) {
+            for (String url : dto.getImages()) {
+                securityService.checkImage(url);
+            }
+        }
 
-        // 是否今天的第一次打卡(用于 streak/累计统计)
-        boolean firstToday = checkinMapper.selectCount(
-                Wrappers.<Checkin>lambdaQuery()
-                        .eq(Checkin::getUserId, userId)
-                        .eq(Checkin::getCheckinDate, today)) == 0;
+        LocalDate today = LocalDate.now();
 
         Checkin checkin = new Checkin();
         checkin.setUserId(userId);
@@ -80,30 +88,81 @@ public class CheckinService {
             }
         }
 
-        if (firstToday) {
-            updateStreak(userId, today);
-        }
+        // 统一由打卡记录重算用户统计,保证 streak / 累计天数始终正确
+        recomputeUserStats(userId);
 
         return toVO(checkin, userId);
     }
 
-    /** 更新用户连续打卡天数等统计 */
-    private void updateStreak(Long userId, LocalDate today) {
+    /**
+     * 根据打卡记录重算用户的连续天数、最长连续、累计天数、最近打卡日期。
+     * 比增量更新更健壮:新增、删除都调用它,不会出现统计漂移。
+     */
+    public void recomputeUserStats(Long userId) {
         User user = userMapper.selectById(userId);
-        LocalDate last = user.getLastCheckinDate();
-        int current;
-        if (last != null && last.plusDays(1).isEqual(today)) {
-            current = user.getCurrentStreak() + 1;
-        } else if (last != null && last.isEqual(today)) {
-            current = user.getCurrentStreak();
-        } else {
-            current = 1;
+        if (user == null) {
+            return;
         }
+        List<LocalDate> dates = checkinMapper.selectList(
+                        Wrappers.<Checkin>lambdaQuery()
+                                .select(Checkin::getCheckinDate)
+                                .eq(Checkin::getUserId, userId))
+                .stream().map(Checkin::getCheckinDate).distinct()
+                .sorted().collect(Collectors.toList());
+
+        if (dates.isEmpty()) {
+            user.setCurrentStreak(0);
+            user.setMaxStreak(0);
+            user.setTotalDays(0);
+            user.setLastCheckinDate(null);
+            userMapper.updateById(user);
+            return;
+        }
+
+        int totalDays = dates.size();
+        // 最长连续
+        int maxStreak = 1;
+        int run = 1;
+        for (int i = 1; i < dates.size(); i++) {
+            if (dates.get(i - 1).plusDays(1).isEqual(dates.get(i))) {
+                run++;
+            } else {
+                run = 1;
+            }
+            maxStreak = Math.max(maxStreak, run);
+        }
+        // 当前连续:从最后一天向前数连续天数
+        int current = 1;
+        for (int i = dates.size() - 1; i > 0; i--) {
+            if (dates.get(i - 1).plusDays(1).isEqual(dates.get(i))) {
+                current++;
+            } else {
+                break;
+            }
+        }
+        LocalDate last = dates.get(dates.size() - 1);
+
         user.setCurrentStreak(current);
-        user.setMaxStreak(Math.max(user.getMaxStreak() == null ? 0 : user.getMaxStreak(), current));
-        user.setTotalDays((user.getTotalDays() == null ? 0 : user.getTotalDays()) + 1);
-        user.setLastCheckinDate(today);
+        user.setMaxStreak(maxStreak);
+        user.setTotalDays(totalDays);
+        user.setLastCheckinDate(last);
         userMapper.updateById(user);
+    }
+
+    /**
+     * 用于展示的"当前连续天数":只有最近一次打卡在今天或昨天时才算连续,否则已断签为 0。
+     * 避免直接读 user.currentStreak 出现过期值。
+     */
+    public static int effectiveStreak(User user) {
+        if (user == null || user.getLastCheckinDate() == null) {
+            return 0;
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate last = user.getLastCheckinDate();
+        if (last.isEqual(today) || last.plusDays(1).isEqual(today)) {
+            return user.getCurrentStreak() == null ? 0 : user.getCurrentStreak();
+        }
+        return 0;
     }
 
     private int estimateCalorie(String sportName, int duration) {
@@ -125,7 +184,7 @@ public class CheckinService {
                 Wrappers.<Checkin>lambdaQuery()
                         .eq(Checkin::getUserId, userId)
                         .orderByDesc(Checkin::getCreatedAt));
-        return result.convert(c -> toVO(c, userId));
+        return toVOPage(result, userId);
     }
 
     /** 广场(所有人的打卡,分页),用于社交 */
@@ -134,7 +193,13 @@ public class CheckinService {
         IPage<Checkin> result = checkinMapper.selectPage(p,
                 Wrappers.<Checkin>lambdaQuery()
                         .orderByDesc(Checkin::getCreatedAt));
-        return result.convert(c -> toVO(c, userId));
+        return toVOPage(result, userId);
+    }
+
+    private IPage<CheckinVO> toVOPage(IPage<Checkin> source, Long userId) {
+        Page<CheckinVO> voPage = new Page<>(source.getCurrent(), source.getSize(), source.getTotal());
+        voPage.setRecords(toVOList(source.getRecords(), userId));
+        return voPage;
     }
 
     /** 某月已打卡的日期列表(日历用) */
@@ -169,40 +234,71 @@ public class CheckinService {
         checkinMapper.deleteById(id);
         checkinImageMapper.delete(Wrappers.<CheckinImage>lambdaQuery()
                 .eq(CheckinImage::getCheckinId, id));
-        // 说明:为简化逻辑,删除单条记录不回滚 streak 统计
+        // 删除后重算统计,回滚 streak / 累计天数
+        recomputeUserStats(userId);
     }
 
+    /** 单条转 VO(详情用) */
     private CheckinVO toVO(Checkin c, Long currentUserId) {
-        CheckinVO vo = new CheckinVO();
-        vo.setId(c.getId());
-        vo.setUserId(c.getUserId());
-        vo.setCheckinDate(c.getCheckinDate());
-        vo.setSportTypeId(c.getSportTypeId());
-        vo.setSportName(c.getSportName());
-        vo.setDuration(c.getDuration());
-        vo.setCalorie(c.getCalorie());
-        vo.setRemark(c.getRemark());
-        vo.setLikeCount(c.getLikeCount());
-        vo.setCreatedAt(c.getCreatedAt());
+        return toVOList(Collections.singletonList(c), currentUserId).get(0);
+    }
 
-        User u = userMapper.selectById(c.getUserId());
-        if (u != null) {
-            vo.setNickname(u.getNickname());
-            vo.setAvatar(u.getAvatar());
+    /**
+     * 批量转 VO:一次性查出涉及的用户、图片、当前用户的点赞,避免逐条查询(N+1)。
+     */
+    private List<CheckinVO> toVOList(List<Checkin> checkins, Long currentUserId) {
+        if (checkins == null || checkins.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Set<Long> userIds = checkins.stream().map(Checkin::getUserId).collect(Collectors.toSet());
+        List<Long> checkinIds = checkins.stream().map(Checkin::getId).collect(Collectors.toList());
+
+        // 批量查用户
+        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 批量查图片并按 checkinId 分组
+        Map<Long, List<String>> imageMap = new HashMap<>();
+        checkinImageMapper.selectList(
+                        Wrappers.<CheckinImage>lambdaQuery()
+                                .in(CheckinImage::getCheckinId, checkinIds)
+                                .orderByAsc(CheckinImage::getSort))
+                .forEach(img -> imageMap.computeIfAbsent(img.getCheckinId(), k -> new ArrayList<>())
+                        .add(img.getUrl()));
+
+        // 批量查当前用户点赞过的 checkinId
+        Set<Long> likedIds = new HashSet<>();
+        if (currentUserId != null) {
+            likeRecordMapper.selectList(
+                            Wrappers.<LikeRecord>lambdaQuery()
+                                    .eq(LikeRecord::getUserId, currentUserId)
+                                    .in(LikeRecord::getCheckinId, checkinIds))
+                    .forEach(lr -> likedIds.add(lr.getCheckinId()));
         }
 
-        List<String> images = checkinImageMapper.selectList(
-                        Wrappers.<CheckinImage>lambdaQuery()
-                                .eq(CheckinImage::getCheckinId, c.getId())
-                                .orderByAsc(CheckinImage::getSort))
-                .stream().map(CheckinImage::getUrl).collect(Collectors.toList());
-        vo.setImages(images == null ? Collections.emptyList() : images);
+        List<CheckinVO> result = new ArrayList<>(checkins.size());
+        for (Checkin c : checkins) {
+            CheckinVO vo = new CheckinVO();
+            vo.setId(c.getId());
+            vo.setUserId(c.getUserId());
+            vo.setCheckinDate(c.getCheckinDate());
+            vo.setSportTypeId(c.getSportTypeId());
+            vo.setSportName(c.getSportName());
+            vo.setDuration(c.getDuration());
+            vo.setCalorie(c.getCalorie());
+            vo.setRemark(c.getRemark());
+            vo.setLikeCount(c.getLikeCount());
+            vo.setCreatedAt(c.getCreatedAt());
 
-        Long likeCnt = likeRecordMapper.selectCount(
-                Wrappers.<com.fitness.checkin.entity.LikeRecord>lambdaQuery()
-                        .eq(com.fitness.checkin.entity.LikeRecord::getCheckinId, c.getId())
-                        .eq(com.fitness.checkin.entity.LikeRecord::getUserId, currentUserId));
-        vo.setLiked(likeCnt != null && likeCnt > 0);
-        return vo;
+            User u = userMap.get(c.getUserId());
+            if (u != null) {
+                vo.setNickname(u.getNickname());
+                vo.setAvatar(u.getAvatar());
+            }
+            vo.setImages(imageMap.getOrDefault(c.getId(), Collections.emptyList()));
+            vo.setLiked(likedIds.contains(c.getId()));
+            result.add(vo);
+        }
+        return result;
     }
 }

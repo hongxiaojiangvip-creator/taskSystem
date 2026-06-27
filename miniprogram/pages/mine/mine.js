@@ -54,6 +54,9 @@ Page({
   goRecords() {
     wx.navigateTo({ url: '/pages/records/records' });
   },
+  goAi() {
+    wx.navigateTo({ url: '/pages/ai/ai' });
+  },
 
   logout() {
     wx.showModal({

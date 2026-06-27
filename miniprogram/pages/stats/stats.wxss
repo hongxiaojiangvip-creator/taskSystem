@@ -1,3 +1,14 @@
+.ai-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: #fff;
+}
+.ai-banner-title { font-size: 32rpx; font-weight: bold; margin-bottom: 6rpx; }
+.ai-banner .text-muted { color: rgba(255,255,255,0.85); }
+.ai-banner-arrow { font-size: 36rpx; }
+
 .grid { display: flex; flex-wrap: wrap; }
 .grid-item { width: 25%; text-align: center; }
 .num { font-size: 44rpx; font-weight: bold; color: #4caf50; }

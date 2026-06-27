@@ -34,3 +34,17 @@
 
   <button class="btn-primary submit-btn" bindtap="submit" disabled="{{submitting}}">提交打卡</button>
 </view>
+
+<!-- 打卡成功 + AI 教练点评 -->
+<view wx:if="{{showResult}}" class="result-mask">
+  <view class="result-card">
+    <view class="result-emoji">🎉</view>
+    <view class="result-title">打卡成功!</view>
+    <view class="ai-box">
+      <view class="ai-head">🤖 AI 教练</view>
+      <view wx:if="{{aiLoading}}" class="ai-loading">教练正在点评中...</view>
+      <view wx:else class="ai-text">{{aiComment}}</view>
+    </view>
+    <button class="btn-primary" bindtap="finish">完成</button>
+  </view>
+</view>

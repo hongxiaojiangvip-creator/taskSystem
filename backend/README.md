@@ -28,6 +28,8 @@ mysql -u root -p < src/main/resources/db/schema.sql
 | `WX_MOCK_LOGIN` | 未配置 AppID 时用 mock 登录 | true |
 | `UPLOAD_DIR` | 图片上传目录 | ./uploads |
 | `UPLOAD_URL_PREFIX` | 图片访问前缀 | http://localhost:8080/uploads |
+| `ANTHROPIC_API_KEY` | Claude API Key,启用 AI 能力(为空时返回降级文案) | 空 |
+| `AI_MODEL` | 使用的 Claude 模型 | claude-opus-4-8 |
 
 > 本地联调:不配 `WX_APPID` 时,`mock-login` 会把 `wx.login` 的 code 直接当作 openid,无需真实微信后台即可登录调试。
 
@@ -58,6 +60,12 @@ mvn spring-boot:run
 | GET  | `/api/goal` | 获取目标 | 是 |
 | POST | `/api/goal` | 保存目标 | 是 |
 | GET  | `/api/rank?period=week` | 排行榜 week/month/all | 是 |
+| POST | `/api/ai/comment` | AI 教练点评某次打卡 `{checkinId}` | 是 |
+| GET  | `/api/ai/weekly-report` | AI 周报(分析最近 7 天) | 是 |
+| POST | `/api/ai/plan` | AI 训练计划 `{goal?}` | 是 |
+| POST | `/api/ai/chat` | AI 健身问答 `{messages:[{role,content}]}` | 是 |
+
+> AI 能力基于 Anthropic Claude(`claude-opus-4-8`)。未配置 `ANTHROPIC_API_KEY` 时接口返回友好的降级文案,小程序功能不受影响。
 
 统一返回体:
 ```json

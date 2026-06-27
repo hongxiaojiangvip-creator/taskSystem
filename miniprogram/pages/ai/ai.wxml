@@ -1,0 +1,44 @@
+<view class="container">
+  <view class="tabs">
+    <text class="tab {{tab === 'report' ? 'active' : ''}}" data-tab="report" bindtap="switchTab">AI周报</text>
+    <text class="tab {{tab === 'plan' ? 'active' : ''}}" data-tab="plan" bindtap="switchTab">训练计划</text>
+    <text class="tab {{tab === 'chat' ? 'active' : ''}}" data-tab="chat" bindtap="switchTab">健身问答</text>
+  </view>
+
+  <!-- 周报 -->
+  <view wx:if="{{tab === 'report'}}" class="card ai-card">
+    <view wx:if="{{reportLoading}}" class="ai-loading">AI 正在分析你的本周数据...</view>
+    <view wx:else class="ai-content">{{report}}</view>
+    <button wx:if="{{!reportLoading}}" class="btn-primary refresh" bindtap="loadReport">重新生成</button>
+  </view>
+
+  <!-- 训练计划 -->
+  <view wx:if="{{tab === 'plan'}}">
+    <view class="card">
+      <view class="label">你的目标(选填)</view>
+      <textarea class="textarea" placeholder="例如:减脂、增肌、备战马拉松、改善体态..." value="{{planGoal}}" bindinput="onPlanGoal" maxlength="200" />
+      <button class="btn-primary" bindtap="genPlan" disabled="{{planLoading}}">
+        {{planLoading ? '生成中...' : '生成一周训练计划'}}
+      </button>
+    </view>
+    <view wx:if="{{plan}}" class="card ai-card">
+      <view class="ai-content">{{plan}}</view>
+    </view>
+  </view>
+
+  <!-- 问答 -->
+  <view wx:if="{{tab === 'chat'}}" class="chat-wrap">
+    <scroll-view scroll-y class="chat-list" scroll-into-view="bottom">
+      <view wx:if="{{chatList.length === 0}}" class="chat-tip text-muted">向 AI 教练提问吧,比如「跑步膝盖疼怎么办?」</view>
+      <view wx:for="{{chatList}}" wx:key="index" class="msg {{item.role}}">
+        <view class="bubble">{{item.content}}</view>
+      </view>
+      <view wx:if="{{chatLoading}}" class="msg assistant"><view class="bubble">思考中...</view></view>
+      <view id="bottom"></view>
+    </scroll-view>
+    <view class="chat-input-bar">
+      <input class="chat-input" placeholder="输入你的问题" value="{{chatInput}}" bindinput="onChatInput" confirm-type="send" bindconfirm="sendChat" />
+      <button class="send-btn" bindtap="sendChat">发送</button>
+    </view>
+  </view>
+</view>

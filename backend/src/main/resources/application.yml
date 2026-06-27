@@ -40,3 +40,8 @@ app:
     dir: ${UPLOAD_DIR:./uploads}
     # 对外访问前缀
     url-prefix: ${UPLOAD_URL_PREFIX:http://localhost:8080/uploads}
+  ai:
+    # Anthropic Claude API Key,通过环境变量注入;为空时 AI 功能返回友好降级文案
+    api-key: ${ANTHROPIC_API_KEY:}
+    # 使用的模型
+    model: ${AI_MODEL:claude-opus-4-8}
