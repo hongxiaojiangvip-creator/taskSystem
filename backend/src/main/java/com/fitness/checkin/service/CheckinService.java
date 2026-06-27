@@ -119,19 +119,29 @@ public class CheckinService {
             return;
         }
 
-        int totalDays = dates.size();
-        // 最长连续
+        int[] stats = computeStats(dates);
+        user.setCurrentStreak(stats[0]);
+        user.setMaxStreak(stats[1]);
+        user.setTotalDays(stats[2]);
+        user.setLastCheckinDate(dates.get(dates.size() - 1));
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 由「升序、去重」的打卡日期列表计算 {当前连续, 最长连续, 累计天数}。
+     * 纯函数,便于单元测试。当前连续 = 以最后一天结尾的连续段长度(是否已断签由 effectiveStreak 判断)。
+     */
+    static int[] computeStats(List<LocalDate> dates) {
+        if (dates == null || dates.isEmpty()) {
+            return new int[]{0, 0, 0};
+        }
+        int total = dates.size();
         int maxStreak = 1;
         int run = 1;
         for (int i = 1; i < dates.size(); i++) {
-            if (dates.get(i - 1).plusDays(1).isEqual(dates.get(i))) {
-                run++;
-            } else {
-                run = 1;
-            }
+            run = dates.get(i - 1).plusDays(1).isEqual(dates.get(i)) ? run + 1 : 1;
             maxStreak = Math.max(maxStreak, run);
         }
-        // 当前连续:从最后一天向前数连续天数
         int current = 1;
         for (int i = dates.size() - 1; i > 0; i--) {
             if (dates.get(i - 1).plusDays(1).isEqual(dates.get(i))) {
@@ -140,13 +150,7 @@ public class CheckinService {
                 break;
             }
         }
-        LocalDate last = dates.get(dates.size() - 1);
-
-        user.setCurrentStreak(current);
-        user.setMaxStreak(maxStreak);
-        user.setTotalDays(totalDays);
-        user.setLastCheckinDate(last);
-        userMapper.updateById(user);
+        return new int[]{current, maxStreak, total};
     }
 
     /**
