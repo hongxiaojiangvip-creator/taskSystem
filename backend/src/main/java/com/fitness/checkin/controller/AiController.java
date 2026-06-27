@@ -27,10 +27,10 @@ public class AiController {
         return Result.success(Map.of("comment", text));
     }
 
-    /** AI 周报 */
+    /** AI 周报(refresh=true 强制重新生成,否则同一周内走缓存) */
     @GetMapping("/weekly-report")
-    public Result<Map<String, Object>> weeklyReport() {
-        return Result.success(Map.of("report", aiService.weeklyReport(UserContext.get())));
+    public Result<Map<String, Object>> weeklyReport(@RequestParam(defaultValue = "false") boolean refresh) {
+        return Result.success(Map.of("report", aiService.weeklyReport(UserContext.get(), refresh)));
     }
 
     /** AI 训练计划 */
@@ -43,7 +43,7 @@ public class AiController {
     /** AI 健身问答(多轮) */
     @PostMapping("/chat")
     public Result<Map<String, Object>> chat(@RequestBody ChatDTO dto) {
-        return Result.success(Map.of("reply", aiService.chat(dto.getMessages())));
+        return Result.success(Map.of("reply", aiService.chat(UserContext.get(), dto.getMessages())));
     }
 
     @Data

@@ -2,6 +2,7 @@ package com.fitness.checkin.controller;
 
 import com.fitness.checkin.common.BusinessException;
 import com.fitness.checkin.common.Result;
+import com.fitness.checkin.service.WechatSecurityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -27,12 +29,23 @@ public class UploadController {
     @Value("${app.upload.url-prefix}")
     private String urlPrefix;
 
+    private final WechatSecurityService securityService;
+
     /** 图片上传,返回可访问 URL */
     @PostMapping
     public Result<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new BusinessException("文件为空");
         }
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new BusinessException("读取文件失败");
+        }
+        // 上传即审核;命中违规直接拒绝,不落盘
+        securityService.checkImageBytes(bytes, file.getOriginalFilename());
+
         String original = file.getOriginalFilename();
         String ext = (original != null && original.contains(".."))
                 ? "" : (original != null && original.contains(".")
@@ -46,7 +59,7 @@ public class UploadController {
         String filename = UUID.randomUUID().toString().replace("-", "") + ext;
         File dest = new File(dir, filename);
         try {
-            file.transferTo(dest);
+            Files.write(dest.toPath(), bytes);
         } catch (IOException e) {
             throw new BusinessException("文件保存失败");
         }

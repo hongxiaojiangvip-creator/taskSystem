@@ -9,7 +9,7 @@
   <view wx:if="{{tab === 'report'}}" class="card ai-card">
     <view wx:if="{{reportLoading}}" class="ai-loading">AI 正在分析你的本周数据...</view>
     <view wx:else class="ai-content">{{report}}</view>
-    <button wx:if="{{!reportLoading}}" class="btn-primary refresh" bindtap="loadReport">重新生成</button>
+    <button wx:if="{{!reportLoading}}" class="btn-primary refresh" bindtap="refreshReport">重新生成</button>
   </view>
 
   <!-- 训练计划 -->

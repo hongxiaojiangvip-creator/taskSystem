@@ -25,13 +25,16 @@ Page({
     this.loadReport();
   },
 
-  // 周报
-  loadReport() {
+  // 周报(force=true 强制重新生成)
+  loadReport(force) {
     if (this.data.reportLoading) return;
     this.setData({ reportLoading: true });
-    api.aiWeeklyReport().then((res) => {
+    api.aiWeeklyReport(force === true).then((res) => {
       this.setData({ report: res.report, reportLoading: false });
     }).catch(() => this.setData({ reportLoading: false }));
+  },
+  refreshReport() {
+    this.loadReport(true);
   },
 
   // 训练计划

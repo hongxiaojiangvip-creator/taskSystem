@@ -11,12 +11,17 @@ import com.fitness.checkin.entity.Goal;
 import com.fitness.checkin.entity.User;
 import com.fitness.checkin.mapper.CheckinMapper;
 import com.fitness.checkin.mapper.UserMapper;
+import com.fitness.checkin.util.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -37,19 +42,32 @@ public class AiService {
     private final UserMapper userMapper;
     private final StatsService statsService;
     private final GoalService goalService;
+    private final RateLimiter rateLimiter;
 
     private volatile AnthropicClient client;
 
+    /** 周报缓存:userId -> (本周一日期, 内容)。同一周内不重复调用 Claude */
+    private final Map<Long, Object[]> reportCache = new ConcurrentHashMap<>();
+
     public AiService(CheckinMapper checkinMapper, UserMapper userMapper,
-                     StatsService statsService, GoalService goalService) {
+                     StatsService statsService, GoalService goalService,
+                     RateLimiter rateLimiter) {
         this.checkinMapper = checkinMapper;
         this.userMapper = userMapper;
         this.statsService = statsService;
         this.goalService = goalService;
+        this.rateLimiter = rateLimiter;
     }
 
     public boolean enabled() {
         return apiKey != null && !apiKey.isBlank();
+    }
+
+    /** 限流:超出抛 429 */
+    private void rateLimit(Long userId, String biz, int perMinute) {
+        if (!rateLimiter.allow(biz + ":" + userId, perMinute)) {
+            throw new BusinessException(429, "操作太频繁,请稍后再试");
+        }
     }
 
     private AnthropicClient client() {
@@ -100,6 +118,7 @@ public class AiService {
         if (!enabled()) {
             return "坚持就是胜利,今天也很棒!继续保持哦 💪";
         }
+        rateLimit(userId, "ai-comment", 20);
         Checkin c = checkinMapper.selectById(checkinId);
         if (c == null) {
             throw new BusinessException("打卡记录不存在");
@@ -115,11 +134,18 @@ public class AiService {
         return complete(COACH_SYSTEM, prompt, 400);
     }
 
-    /** AI 周报:分析最近 7 天运动数据并给建议 */
-    public String weeklyReport(Long userId) {
+    /** AI 周报:分析最近 7 天运动数据并给建议(同一周内缓存,force=true 强制重新生成) */
+    public String weeklyReport(Long userId, boolean force) {
         if (!enabled()) {
             return "本周继续保持规律运动,注意循序渐进,记得拉伸和补水哦~";
         }
+        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        Object[] cached = reportCache.get(userId);
+        if (!force && cached != null && weekStart.equals(cached[0])) {
+            return (String) cached[1];
+        }
+        rateLimit(userId, "ai-report", 5);
+
         Map<String, Object> overview = statsService.overview(userId);
         List<Map<String, Object>> trend = statsService.trend(userId, 7);
         String trendStr = trend.stream()
@@ -134,7 +160,9 @@ public class AiService {
                 overview.get("currentStreak"), overview.get("totalDays"),
                 overview.get("weekDays"), overview.get("weekMinutes"),
                 overview.get("goalDays"), overview.get("goalMinutes"), trendStr);
-        return complete(system, prompt, 1200);
+        String report = complete(system, prompt, 1200);
+        reportCache.put(userId, new Object[]{weekStart, report});
+        return report;
     }
 
     /** AI 个性化训练计划 */
@@ -142,6 +170,7 @@ public class AiService {
         if (!enabled()) {
             return "建议:每周运动 3-5 天,有氧与力量结合,每次 30-45 分钟,逐步增加强度。";
         }
+        rateLimit(userId, "ai-plan", 5);
         Map<String, Object> overview = statsService.overview(userId);
         Goal goal = goalService.get(userId);
         String system = "你是一名专业健身教练。请用简体中文为用户制定一份未来一周的训练计划," +
@@ -157,10 +186,11 @@ public class AiService {
     }
 
     /** AI 健身问答助手(支持多轮) */
-    public String chat(List<Map<String, String>> messages) {
+    public String chat(Long userId, List<Map<String, String>> messages) {
         if (!enabled()) {
             return "AI 助手暂未开启,请联系管理员配置后使用~";
         }
+        rateLimit(userId, "ai-chat", 15);
         try {
             String system = "你是一名专业、友善的健身与健康顾问。请用简体中文回答用户关于健身、" +
                     "饮食、康复、作息等问题。回答专业、简洁、实用。涉及伤病或医疗问题时,提醒用户就医。";

@@ -5,7 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.checkin.common.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -87,15 +93,38 @@ public class WechatSecurityService {
     }
 
     /**
-     * 图片内容安全检测(简化:按 URL 提示,真实场景应上传二进制)。
-     * 这里仅占位,记录日志;如需严格校验,需要把图片字节 multipart 上传到 img_sec_check。
+     * 图片内容安全检测:在上传阶段对原始字节调用 img_sec_check。命中违规抛业务异常。
      */
-    public void checkImage(String imageUrl) {
-        if (!enabled() || imageUrl == null || imageUrl.isBlank()) {
+    public void checkImageBytes(byte[] data, String filename) {
+        if (!enabled() || data == null || data.length == 0) {
             return;
         }
-        // 图片审核需要以 multipart 形式上传原始字节;此处留出扩展点,
-        // 生产实现可在上传阶段(UploadController)直接对字节调用 img_sec_check。
-        log.debug("[img-sec-check] 待接入图片审核: {}", imageUrl);
+        String token = getAccessToken();
+        if (token == null) {
+            return;
+        }
+        String url = "https://api.weixin.qq.com/wxa/img_sec_check?access_token=" + token;
+        try {
+            ByteArrayResource resource = new ByteArrayResource(data) {
+                @Override
+                public String getFilename() {
+                    return (filename == null || filename.isBlank()) ? "image.jpg" : filename;
+                }
+            };
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("media", resource);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            String resp = restTemplate.postForObject(url, new HttpEntity<>(body, headers), String.class);
+            JsonNode node = objectMapper.readTree(resp);
+            if (node.path("errcode").asInt(0) == 87014) {
+                throw new BusinessException("图片含有违规内容,请更换后再上传");
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("图片内容审核调用异常,放行", e);
+        }
     }
 }

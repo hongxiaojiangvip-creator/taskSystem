@@ -55,13 +55,8 @@ public class CheckinService {
         if (type == null) {
             throw new BusinessException("运动类型不存在");
         }
-        // 内容安全审核(文字 + 图片),未配置微信凭证时自动跳过
+        // 文字内容安全审核(图片已在上传阶段审核),未配置微信凭证时自动跳过
         securityService.checkText(dto.getRemark());
-        if (dto.getImages() != null) {
-            for (String url : dto.getImages()) {
-                securityService.checkImage(url);
-            }
-        }
 
         LocalDate today = LocalDate.now();
 
